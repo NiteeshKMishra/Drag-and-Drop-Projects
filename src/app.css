@@ -17,6 +17,16 @@ textarea {
   margin: 0.5rem 0;
 }
 
+.app{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.form-control{
+  width: 30rem
+}
+
 label {
   font-weight: bold;
 }
