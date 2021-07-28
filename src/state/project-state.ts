@@ -1,4 +1,4 @@
-import { Listener, Project, ProjectStatus } from "../types/project.js";
+import { Listener, Project, ProjectStatus } from "../types/project";
 
 class ProjectState{
     private static instance: ProjectState

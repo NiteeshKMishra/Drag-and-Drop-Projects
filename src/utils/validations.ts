@@ -1,4 +1,4 @@
-import { ValidateParams } from "../types/utils.js"
+import { ValidateParams } from "../types/utils"
 
 export function Validate(validateParams: ValidateParams): boolean{
     const value = validateParams.value

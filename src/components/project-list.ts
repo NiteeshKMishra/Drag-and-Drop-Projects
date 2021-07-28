@@ -1,10 +1,10 @@
-import { AutoBind } from "../decorators/autobind.js";
-import { DropTarget } from "../types/drag-drop.js";
-import { Project, ProjectStatus } from "../types/project.js";
-import { Component } from "./base-component.js";
-import { ProjectItem } from "./project-item.js";
+import { AutoBind } from "../decorators/autobind";
+import { DropTarget } from "../types/drag-drop";
+import { Project, ProjectStatus } from "../types/project";
+import { Component } from "./base-component";
+import { ProjectItem } from "./project-item";
 
-import { projectState } from "../state/project-state.js";
+import { projectState } from "../state/project-state";
 
 
 export class ProjectList extends Component<HTMLDivElement, HTMLElement> implements DropTarget{
