@@ -64,6 +64,27 @@ function Validate(validateParams: ValidateParams): boolean{
     return isValid
 }
 
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+    private templateElement: HTMLTemplateElement;
+    private hostElement: T;
+    element: U;
+
+    constructor(templateElementId: string, hostElementId: string, elementId: string){
+        this.templateElement = <HTMLTemplateElement> document.getElementById(templateElementId)!
+        this.hostElement = <T> document.getElementById(hostElementId)!
+        const importedEl = document.importNode(this.templateElement.content, true)
+        this.element = <U> importedEl.firstElementChild!
+        this.element.id = elementId
+        this.displayElement()
+    }
+    private displayElement(){
+        this.hostElement.appendChild(this.element)
+    }
+
+    abstract configure(): void;
+    abstract displayContent(): void;
+}
+
 class ProjectState{
     private static instance: ProjectState
     private listeners: Listener[];
@@ -100,20 +121,45 @@ class ProjectState{
 const projectState = ProjectState.getInstance()
 
 
-class ProjectList {
-    private templateElement: HTMLTemplateElement;
-    private hostElement: HTMLDivElement;
-    private listSectionElement: HTMLElement;
+class ProjectItem extends Component<HTMLUListElement, HTMLLIElement>{
+    constructor(hostId: string, private project: Project){
+        super('single-project', hostId, project.id)
+        this.displayContent()
+    }
+
+    get persons(){
+        if(this.project.people === 1){
+            return '1 person'
+        }else{
+            return `${this.project.people} persons`
+        }
+    }
+    configure(){
+
+    }
+    displayContent(){
+        this.element.querySelector('h2')!.textContent = this.project.title
+        this.element.querySelector('h3')!.textContent = `${this.persons} assigned`
+        this.element.querySelector('p')!.textContent = this.project.description
+    }
+
+}
+
+
+class ProjectList extends Component<HTMLDivElement, HTMLElement>{
+    private listId: string;
     private activeProjects: Project[];
     private finishedProjects: Project[];
     constructor(private type: 'active' | 'finished'){
+        super('project-list', 'app', `${type}-projects`)
+        this.listId = `${this.type}-projects-list`
         this.activeProjects = []
         this.finishedProjects = []
-        this.templateElement = <HTMLTemplateElement> document.getElementById('project-list')!
-        this.hostElement = <HTMLDivElement> document.getElementById('app')!
-        const importedEl = document.importNode(this.templateElement.content, true)
-        this.listSectionElement = <HTMLElement> importedEl.firstElementChild!
-        this.listSectionElement.id = `${this.type}-projects`
+        this.configure()
+        this.displayContent()
+    }
+
+    configure(){
         projectState.addListerner((project: Project) => {
             if(project.status === ProjectStatus.Active){
                 this.activeProjects.push(project)
@@ -122,61 +168,53 @@ class ProjectList {
             }
             this.showLists()
         })
-        this.showForm()
-        this.renderContent()
+    }
+
+    displayContent(){
+        this.element.querySelector('ul')!.id = this.listId
+        const headerSection = this.element.querySelector('h2')!
+        headerSection.innerText = this.type === 'active' ? 'Active Projects' : 'Finished Projects'
     }
 
     private showLists(){
-        const list = <HTMLUListElement> document.getElementById(`${this.type}-projects-list`)!
+        const list = <HTMLUListElement> document.getElementById(this.listId)!
         const allProjects = this.type === 'active' ? [...this.activeProjects] : [...this.finishedProjects]
         list.innerHTML = ""
         allProjects.forEach((project: Project) => {
-            const listElement = document.createElement('li')
-            listElement.textContent = project.title
-            list.appendChild(listElement)
+            new ProjectItem(this.listId, project)
         })
-    }
-
-    private showForm(){
-        this.hostElement.appendChild(this.listSectionElement)
-    }
-
-    private renderContent(){
-        const listId = `${this.type}-projects-list`
-        this.listSectionElement.querySelector('ul')!.id = listId
-        const headerSections = this.listSectionElement.getElementsByTagName('h2')
-        if(headerSections.length > 0){
-            headerSections[0].innerText = this.type === 'active' ? 'Active Projects' : 'Finished Projects'
-        }
     }
 }
 
-class ProjectInput{
-    private templateElement: HTMLTemplateElement;
-    private hostElement: HTMLDivElement;
-    private formElement: HTMLFormElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement>{
     titleInput: HTMLInputElement;
     descInput: HTMLInputElement;
     peopleInput: HTMLInputElement;
     constructor(){
-        this.templateElement = <HTMLTemplateElement> document.getElementById('project-input')!
-        this.hostElement = <HTMLDivElement> document.getElementById('app')!
-        const importedNodes = document.importNode(this.templateElement.content, true)
-        this.formElement = <HTMLFormElement> importedNodes.firstElementChild
-        this.formElement.id = 'user-input'
-        this.titleInput = <HTMLInputElement> this.formElement.querySelector('#title')
-        this.descInput = <HTMLInputElement> this.formElement.querySelector('#description')
-        this.peopleInput = <HTMLInputElement> this.formElement.querySelector('#people')
-        this.showForm()
-        this.configureForm()
+        super('project-input', 'app', 'user-input')
+        this.titleInput = <HTMLInputElement> this.element.querySelector('#title')
+        this.descInput = <HTMLInputElement> this.element.querySelector('#description')
+        this.peopleInput = <HTMLInputElement> this.element.querySelector('#people')
+        this.configure()
+    }
+    configure(){
+        this.element.addEventListener('submit', this.handleSubmit)
     }
 
-    private showForm(){
-        this.hostElement.appendChild(this.formElement)
+    displayContent(){
+
     }
 
-    private configureForm(){
-        this.formElement.addEventListener('submit', this.handleSubmit)
+    @AutoBind
+    handleSubmit(event: Event){
+        event.preventDefault();
+        event.stopPropagation();
+        const formValues = this.gatherUserInput()
+        if(Array.isArray(formValues)){
+            const [title, desc, people] = formValues
+            projectState.addProject(title, desc, people)
+            this.element.reset()
+        }
     }
 
     private gatherUserInput(): [string, string, number] | void {
@@ -192,21 +230,6 @@ class ProjectInput{
             return
         }
         return [title, desc, +people]
-    }
-
-    private resetForm(){
-        this.formElement.reset()
-    }
-    @AutoBind
-    handleSubmit(event: Event){
-        event.preventDefault();
-        event.stopPropagation();
-        const formValues = this.gatherUserInput()
-        if(Array.isArray(formValues)){
-            const [title, desc, people] = formValues
-            projectState.addProject(title, desc, people)
-            this.resetForm()
-        }
     }
 }
 

@@ -4,11 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <title>ProjectManager</title>
+    <title>Drag and Drop</title>
     <link rel="stylesheet" href="src/app.css" />
     <script src="dist/app.js" defer></script>
   </head>
   <body>
+    <h1 class="main-header">Your Todo Project</h1>
     <template id="project-input">
       <form>
         <div class="form-control">
@@ -23,11 +24,17 @@
           <label for="people">People</label>
           <input type="number" id="people" step="1" min="0" max="10" />
         </div>
+        <div class="btn-control">
         <button type="submit">ADD PROJECT</button>
+        </div>
       </form>
     </template>
     <template id="single-project">
-      <li></li>
+      <li>
+        <h2></h2>
+        <h3></h3>
+        <p></p>
+      </li>
     </template>
     <template id="project-list">
       <section class="projects">
