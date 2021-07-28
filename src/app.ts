@@ -104,18 +104,21 @@ class ProjectList {
     private templateElement: HTMLTemplateElement;
     private hostElement: HTMLDivElement;
     private listSectionElement: HTMLElement;
-    private allProjects: Project[];
+    private activeProjects: Project[];
+    private finishedProjects: Project[];
     constructor(private type: 'active' | 'finished'){
-        this.allProjects = []
+        this.activeProjects = []
+        this.finishedProjects = []
         this.templateElement = <HTMLTemplateElement> document.getElementById('project-list')!
         this.hostElement = <HTMLDivElement> document.getElementById('app')!
         const importedEl = document.importNode(this.templateElement.content, true)
         this.listSectionElement = <HTMLElement> importedEl.firstElementChild!
         this.listSectionElement.id = `${this.type}-projects`
         projectState.addListerner((project: Project) => {
-            const alreadyAddedProject = this.allProjects.find((alreadyAddedProject: Project) => alreadyAddedProject.id === project.id)
-            if(!alreadyAddedProject){
-                this.allProjects.push(project)
+            if(project.status === ProjectStatus.Active){
+                this.activeProjects.push(project)
+            }else{
+                this.finishedProjects.push(project)
             }
             this.showLists()
         })
@@ -125,7 +128,9 @@ class ProjectList {
 
     private showLists(){
         const list = <HTMLUListElement> document.getElementById(`${this.type}-projects-list`)!
-        this.allProjects.forEach((project: Project) => {
+        const allProjects = this.type === 'active' ? [...this.activeProjects] : [...this.finishedProjects]
+        list.innerHTML = ""
+        allProjects.forEach((project: Project) => {
             const listElement = document.createElement('li')
             listElement.textContent = project.title
             list.appendChild(listElement)
